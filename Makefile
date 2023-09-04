@@ -17,8 +17,8 @@ test:
 	tox -e py
 	open ./htmlcov/index.html
 
-.PHONY: lint
-lint:
+.PHONY: linters
+linters:
 	tox -e linters
 
 .PHONY: build

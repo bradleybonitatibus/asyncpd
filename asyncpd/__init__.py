@@ -14,8 +14,8 @@
 
 """Asyncio compatible API client for PagerDuty."""
 
-from asyncpd.version import __version__
+from .version import __version__
 
-__doc__ = [
+__all__ = [
     "__version__",
 ]
