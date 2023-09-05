@@ -19,8 +19,12 @@
 from unittest import mock
 
 import httpx
+import pytest
+
 from asyncpd.client import APIClient
 from asyncpd.models import abilities
+
+from tests.models.test_helpers import mock_invalid_auth
 
 
 async def mock_list_abilities(*args, **kwargs) -> httpx.Response:
@@ -58,10 +62,24 @@ async def test_list_abilities(client: APIClient) -> None:
         assert len(all_abilities) > 0
 
 
+async def test_list_abilities_no_auth(client: APIClient) -> None:
+    with mock.patch.object(client, "request", mock_invalid_auth):
+        a = abilities.AbilitiesAPI(client)
+        with pytest.raises(httpx.HTTPStatusError):
+            assert await a.list()
+
+
 async def test_abilities_is_enabled_true(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_enabled_true):
         a = abilities.AbilitiesAPI(client)
         assert await a.is_enabled("teams") is True
+
+
+async def test_abilities_is_enabled_no_auth(client: APIClient) -> None:
+    with mock.patch.object(client, "request", mock_invalid_auth):
+        with pytest.raises(httpx.HTTPStatusError):
+            a = abilities.AbilitiesAPI(client)
+            assert await a.is_enabled("teams") is True
 
 
 async def test_abilities_is_enabled_false(client: APIClient) -> None:
