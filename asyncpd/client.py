@@ -18,6 +18,8 @@ from typing import Any
 
 import httpx
 
+from asyncpd.models.abilities import AbilitiesAPI
+
 
 class APIClient:
     """APIClient is the adapter for calling various PagerDuty API resources."""
@@ -57,3 +59,8 @@ class APIClient:
     async def aclose(self) -> None:
         """Closes the underlying HTTP client."""
         return await self.__client.aclose()
+
+    @property
+    def abilities(self) -> AbilitiesAPI:
+        """Return an instance of the AbilitiesAPI object."""
+        return AbilitiesAPI(self)

@@ -9,15 +9,22 @@ Asyncio compatible PagerDuty API client.
 Here is an example usage snippet for interacting with the PagerDuty API
 with this package:
 ```python
+import asyncio
+
 from asyncpd import APIClient
-from asyncpd.models.abilities import AbilitiesAPI
 
 
-client = APIClient(
-    token="my_pagerduty_oauth_token",
-)
+async def main():
+    client = APIClient(
+        token="my_pagerduty_oauth_token",
+    )
 
-abilities_api = AbilitiesAPI(client)
-print(await abilities_api.list())
-print(abilities_api.is_enabled("sso"))
+    print(await client.abilities.list())
+    print(await client.abilities.is_enabled("sso"))
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+
 ```

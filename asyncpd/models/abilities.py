@@ -15,9 +15,10 @@
 """Abilities resource."""
 from __future__ import annotations
 
-from typing import List
+from typing import List, TYPE_CHECKING
 
-from asyncpd.client import APIClient
+if TYPE_CHECKING:
+    from asyncpd.client import APIClient
 
 Abilities = List[str]
 """Type alias for abilities resource."""
