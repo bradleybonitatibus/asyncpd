@@ -40,7 +40,7 @@ class AbilitiesAPI:
         if not res.status_code == 200:
             res.raise_for_status()
 
-        data: list[str] = res.json()
+        data: dict = res.json()
 
         return data.get("abilities", [])
 

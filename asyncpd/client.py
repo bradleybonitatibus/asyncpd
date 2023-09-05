@@ -14,7 +14,6 @@
 
 """API Client."""
 from __future__ import annotations
-import logging
 
 import httpx
 
@@ -33,7 +32,7 @@ class APIClient:
         self.__client: httpx.AsyncClient = httpx.AsyncClient(
             base_url=base,
             headers={
-                "Authorization": "Token token={token}".format(token=token),
+                "Authorization": f"Token token={token}",
                 "Accept": "application/vnd.pagerduty+json;version=2",
             },
         )
@@ -46,8 +45,8 @@ class APIClient:
         data: dict | None = None,
     ) -> httpx.Response:
         """Execute an async HTTP request to PagerDutys REST API."""
-        if method in ("POST", "PUT"):
-            headers["Content-Type"] = "application/json"
+        if method in ("POST", "PUT") and headers is None:
+            headers = {"Content-Type": "application/json"}
 
         return await self.__client.request(
             method=method,
