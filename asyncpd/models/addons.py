@@ -20,6 +20,7 @@ from enum import Enum
 
 from asyncpd.client import APIClient
 from asyncpd.models.pagination import ClassicPaginationQuery
+from asyncpd.models.service import ServiceReference
 
 
 class AddonType(str, Enum):
@@ -46,13 +47,14 @@ class NewAddon:
 class Addon:
     """PagerDuty addon data model."""
 
-    id: str  # pylint: disable=C0103
+    id: str
     src: str
     type: str
     summary: str | None = None
     name: str | None = None
     self: str | None = None
     html_url: str | None = None
+    services: list[ServiceReference] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Addon":
@@ -90,6 +92,15 @@ class PaginatedAddon:
         )
 
 
+@dataclass
+class AddonUpdateMask:
+    """Updatable fields for an addon."""
+
+    name: str
+    src: str
+    type: AddonType
+
+
 class AddonsAPI:
     """API resource for addons."""
 
@@ -100,7 +111,7 @@ class AddonsAPI:
     async def list(
         self,
         query: ClassicPaginationQuery | None = None,
-        filter: str | None = None,  # pylint: disable=W0622
+        filter: str | None = None,
         include: list[str] | None = None,
         service_ids: list[str] | None = None,
     ) -> PaginatedAddon:
@@ -167,6 +178,57 @@ class AddonsAPI:
         )
 
         if res.status_code != 201:
+            res.raise_for_status()
+
+        return Addon.from_dict(res.json()["addon"])
+
+    async def get(self, id: str) -> Addon | None:
+        """Get an addon by its id.
+
+        Returns:
+            Addon | None
+                None when the addon is not found.
+        """
+        res = await self.__client.request(
+            "GET",
+            f"/addons/{id}",
+        )
+
+        if res.status_code == 404:
+            return None
+
+        if res.status_code != 200:
+            res.raise_for_status()
+
+        return Addon.from_dict(res.json()["addon"])
+
+    async def delete(self, id: str) -> None:
+        """Delete an addon."""
+        res = await self.__client.request(
+            "DELETE",
+            f"/addons/{id}",
+        )
+
+        if res.status_code != 204:
+            res.raise_for_status()
+
+        return None
+
+    async def update(self, id: str, update_mask: AddonUpdateMask) -> Addon:
+        """Update an existing addon."""
+        res = await self.__client.request(
+            "PUT",
+            f"/addons/{id}",
+            data={
+                "addons": {
+                    "type": update_mask.type.value,
+                    "name": update_mask.name,
+                    "src": update_mask.src,
+                }
+            },
+        )
+
+        if res.status_code != 200:
             res.raise_for_status()
 
         return Addon.from_dict(res.json()["addon"])

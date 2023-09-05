@@ -38,7 +38,7 @@ class APIClient:
             },
         )
 
-    async def request(  # pylint: disable=R0913
+    async def request(
         self,
         method: str,
         endpoint: str,

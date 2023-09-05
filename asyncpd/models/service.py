@@ -12,19 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test helpers."""
 
-import httpx
-
-
-async def mock_invalid_auth(*args, **kawrgs) -> httpx.Response:
-    return httpx.Response(
-        status_code=401,
-        request=httpx.Request(method="GET", url="https://fail"),
-    )
+"""Service API resource."""
 
 
-async def mock_not_found(*args, **kwargs) -> httpx.Response:
-    return httpx.Response(
-        status_code=404, request=httpx.Request(method="GET", url="https://fail")
-    )
+from dataclasses import dataclass
+
+
+@dataclass
+class ServiceReference:
+    """Reference to a service."""
+
+    id: str
+    type: str
+    summary: str
+    self: str
+    html_url: str
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ServiceReference":
+        """Serialize dict into ServiceReference."""
+        return ServiceReference(
+            id=data["id"],
+            type=data["type"],
+            summary=data["summary"],
+            self=data["self"],
+            html_url=data["html_url"],
+        )
