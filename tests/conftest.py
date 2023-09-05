@@ -12,4 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for asyncpd."""
+
+"""Test fixtures."""
+
+import os
+import pytest
+
+from asyncpd.client import APIClient
+
+
+@pytest.fixture
+async def client() -> APIClient:
+    """APIClient fixture."""
+    c = APIClient(
+        token=os.environ["ASYNCPD_TEST_API_TOKEN"],
+    )
+    yield c
+    await c.aclose()

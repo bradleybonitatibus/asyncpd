@@ -12,4 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for asyncpd."""
+
+"""Tests for httpx adapter client."""
+
+
+import os
+from asyncpd.client import APIClient
+
+
+async def test_client_request() -> None:
+    c = APIClient(
+        token="test",
+    )
+    res = await c.request("GET", "/abilities")
+    assert res.status_code == 401
+
+    c = APIClient(
+        token=os.environ["ASYNCPD_TEST_API_TOKEN"],
+    )
+
+    res = await c.request("GET", "/health")
+    assert res.status_code == 200
+    await c.aclose()

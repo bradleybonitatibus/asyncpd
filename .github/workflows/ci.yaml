@@ -14,6 +14,8 @@
 
 name: ci
 
+on: ["push"]
+
 jobs:
   tests:
     strategy:
@@ -27,12 +29,12 @@ jobs:
             python: "3.10"
             toxenv: py
           - os: ubuntu-latest
-            python: '3.11'
+            python: "3.11"
             toxenv: py
           - os: ubuntu-latest
-            python: '3.11'
+            python: "3.11"
             toxenv: linters
-    runs-on: ${{ matrix.ox }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
