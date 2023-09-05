@@ -15,7 +15,9 @@
 """Asyncio compatible API client for PagerDuty."""
 
 from .version import __version__
+from .client import APIClient
 
 __all__ = [
     "__version__",
+    "APIClient",
 ]
