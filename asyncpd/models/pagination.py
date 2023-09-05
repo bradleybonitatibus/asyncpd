@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 
-#    http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,19 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
-  - repo: local
-    hooks:
-      - id: static analysis
-        name: static analysis
-        entry: tox -e linters
-        pass_filenames: false
-        language: system
-        types: [python]
+"""Base pagination models."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass
+class ClassicPaginationQuery:
+    """Classic pagination base model."""
+
+    limit: int | None = None
+    offset: int | None = None
+    total: int | None = None
+
+
+@dataclass
+class ClassicPaginationResult:
+    """Classic pagination model."""
+
+    limit: int = 25
+    offset: int = 0
+    more: bool = False
+    total: int | None = None

@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 
-#    http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-added-large-files
-  - repo: local
-    hooks:
-      - id: static analysis
-        name: static analysis
-        entry: tox -e linters
-        pass_filenames: false
-        language: system
-        types: [python]
+"""Test helpers."""
+
+import httpx
+
+
+async def mock_invalid_auth(*args, **kawrgs) -> httpx.Response:
+    return httpx.Response(
+        status_code=401,
+        request=httpx.Request(method="GET", url="https://fail"),
+    )
+
+
+async def mock_not_found(*args, **kwargs) -> httpx.Response:
+    return httpx.Response(
+        status_code=404, request=httpx.Request(method="GET", url="https://fail")
+    )
