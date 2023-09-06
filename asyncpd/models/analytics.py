@@ -28,7 +28,7 @@ class AggregateAnalyticsResponse:
     """Response wrapper from the aggregate analytics API."""
 
     time_zone: str
-    filters: AggregateDataFilters
+    filters: AnalyticsRequestFilters
     order: str
     order_by: str
     data: list[AggregatedMetrics] = field(default_factory=list)
@@ -38,10 +38,42 @@ class AggregateAnalyticsResponse:
         """Serialize AggregateAnalyticsResponse dataclass from a dict object."""
         return AggregateAnalyticsResponse(
             time_zone=data["time_zone"],
-            filters=AggregateDataFilters.from_dict(data["filters"]),
+            filters=AnalyticsRequestFilters.from_dict(data["filters"]),
             order=data["order"],
             order_by=data["order_by"],
             data=[AggregatedMetrics.from_dict(d) for d in data["data"]],
+        )
+
+
+@dataclass
+class RawAnalyticsResponse:
+    """Response wrapper for raw analytics incident data."""
+
+    first: str
+    last: str
+    limit: int
+    more: bool
+    order: str
+    order_by: str
+    starting_after: datetime | None = None
+    filters: AnalyticsRequestFilters | None = None
+    ending_before: datetime | None = None
+    data: list[RawIncidentData] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(self, data: dict) -> "RawAnalyticsResponse":
+        """Serialize RawAnalyticsResponse from a dict."""
+        return RawAnalyticsResponse(
+            first=data["first"],
+            last=data["last"],
+            limit=data["limit"],
+            more=data["more"],
+            order=data["order"],
+            order_by=data["order_by"],
+            starting_after=data["starting_after"],
+            filters=AnalyticsRequestFilters.from_dict(data["filters"]),
+            ending_before=data["ending_before"],
+            data=[RawIncidentData.from_dict(d) for d in data["data"]],
         )
 
 
@@ -88,7 +120,7 @@ class RawIncidentData:
     """Represents the raw incident data."""
 
     id: str
-    service_id: str
+    status: str
     created_at: datetime
     assignment_count: int
     business_hour_interruptions: int
@@ -99,8 +131,23 @@ class RawIncidentData:
     incident_number: int
     major: bool
     off_hour_interruptions: int
-    proirity_id: str
+    priority_id: str
+    priority_name: str
+    priority_order: int
+    auto_resolved: bool
     urgency: str
+    manual_escalation_count: int
+    total_interruptions: int
+    timeout_escalation_count: int
+    reassignment_count: int
+    escalation_policy_name: str
+    escalation_policy_id: str
+    service_name: str
+    service_id: str
+    total_notifications: int
+    snoozed_seconds: int | None = None
+    resolved_by_user_name: str | None = None
+    resolved_by_user_id: str | None = None
     resolved_at: datetime | None = None
     seconds_to_engage: int | None = None
     seconds_to_first_ack: int | None = None
@@ -112,9 +159,14 @@ class RawIncidentData:
     team_name: str | None = None
     user_defined_effort_seconds: int | None = None
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "RawIncidentData":
+        """Serialize RawIncidentData from a dictionary."""
+        return RawIncidentData(**data)
+
 
 @dataclass
-class AggregateDataFilters:
+class AnalyticsRequestFilters:
     """User-defined filters to apply to the aggregate incident data analytics endpoint."""
 
     created_at_start: datetime | None = None
@@ -131,9 +183,9 @@ class AggregateDataFilters:
         return {k: v for k, v in self.__dict__.items() if v is not None}
 
     @classmethod
-    def from_dict(cls, data: dict) -> "AggregateDataFilters":
-        """Serialize AggregateDataFilters object from a dict."""
-        return AggregateDataFilters(
+    def from_dict(cls, data: dict) -> "AnalyticsRequestFilters":
+        """Serialize AnalyticsRequestFilters object from a dict."""
+        return AnalyticsRequestFilters(
             created_at_start=data["created_at_start"],
             create_at_end=data["created_at_end"],
             urgency=data.get("urgency"),
@@ -159,7 +211,7 @@ class AnalyticsAPI:
     async def __do_aggregate_data_fetch(
         self,
         domain: Literal["all", "services", "teams"] = "all",
-        filters: AggregateDataFilters | None = None,
+        filters: AnalyticsRequestFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
     ) -> AggregateAnalyticsResponse:
@@ -182,7 +234,7 @@ class AnalyticsAPI:
 
     async def get_aggregated_incident_data(
         self,
-        filters: AggregateDataFilters | None = None,
+        filters: AnalyticsRequestFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
     ) -> AggregateAnalyticsResponse:
@@ -193,7 +245,7 @@ class AnalyticsAPI:
 
     async def get_aggregated_service_data(
         self,
-        filters: AggregateDataFilters | None = None,
+        filters: AnalyticsRequestFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
     ) -> AggregateAnalyticsResponse:
@@ -204,7 +256,7 @@ class AnalyticsAPI:
 
     async def get_aggregated_team_data(
         self,
-        filters: AggregateDataFilters | None = None,
+        filters: AnalyticsRequestFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
     ) -> AggregateAnalyticsResponse:
@@ -212,3 +264,32 @@ class AnalyticsAPI:
         return await self.__do_aggregate_data_fetch(
             "teams", filters, time_zone, aggregate_unit
         )
+
+    async def get_multiple_raw_incident_data(
+        self,
+        filters: AnalyticsRequestFilters | None = None,
+        limit: int = 20,
+        order: str | None = None,
+        order_by: str | None = None,
+        time_zone: str | None = None,
+    ) -> RawAnalyticsResponse:
+        """Fetch multiple raw incident data points."""
+        res = await self.__client.request(
+            "POST",
+            "/analytics/raw/incidents",
+            headers={
+                "X-EARLY-ACCESS": "analytics-v2",
+            },
+            data={
+                "filters": None if filters is None else filters.to_dict(),
+                "limit": limit,
+                "order": order,
+                "order_by": order_by,
+                "time_zone": time_zone,
+            },
+        )
+
+        if res.status_code != 200:
+            res.raise_for_status()
+
+        return RawAnalyticsResponse.from_dict(res.json())

@@ -123,6 +123,74 @@ async def mock_get_aggregate_service_data(*args, **kwargs) -> httpx.Response:
     )
 
 
+async def mock_get_raw_data_response(*args, **kwargs) -> httpx.Response:
+    return httpx.Response(
+        status_code=200,
+        json={
+            "data": [
+                {
+                    "sleep_hour_interruptions": 2,
+                    "status": "resolved",
+                    "resolved_at": "2021-01-08T15:39:52",
+                    "incident_number": 2,
+                    "seconds_to_resolve": 195,
+                    "created_at": "2021-01-08T15:36:37",
+                    "priority_name": "P1",
+                    "manual_escalation_count": 0,
+                    "team_id": "PGVXG6U",
+                    "id": "P9UMCAE",
+                    "total_interruptions": 2,
+                    "escalation_policy_name": "Korabl-Sputnik 3",
+                    "engaged_seconds": 0,
+                    "priority_order": 67108864,
+                    "off_hour_interruptions": 0,
+                    "escalation_count": 0,
+                    "service_id": "PQVUB8D",
+                    "auto_resolved": False,
+                    "timeout_escalation_count": 0,
+                    "reassignment_count": 0,
+                    "seconds_to_mobilize": None,
+                    "seconds_to_first_ack": None,
+                    "escalation_policy_id": "PCI3U5T",
+                    "major": None,
+                    "resolved_by_user_name": "Brett Willemsen",
+                    "user_defined_effort_seconds": None,
+                    "service_name": "Korabl-Sputnik 3",
+                    "total_notifications": 2,
+                    "description": "Deorbit, engines not cut off as planned",
+                    "assignment_count": 2,
+                    "snoozed_seconds": 0,
+                    "business_hour_interruptions": 0,
+                    "resolved_by_user_id": "PRJ4208",
+                    "urgency": "high",
+                    "engaged_user_count": 0,
+                    "seconds_to_engage": None,
+                    "priority_id": "PITMC5Y",
+                    "team_name": "Space Cosmonauts",
+                }
+            ],
+            "ending_before": None,
+            "filters": {
+                "created_at_end": "2021-01-31T05:00:00Z",
+                "created_at_start": "2021-01-01T05:00:00Z",
+                "major": True,
+                "priority_names": ["P1", "P2"],
+                "service_ids": ["PQVUB8D", "PU2D9X3"],
+                "team_ids": ["PGVXG6U", "PNVU4U4"],
+                "urgency": "high",
+            },
+            "first": "eyJpZCI6IlA5VU1DQUUiLCJvcmRlcl9ieSI6ImNyZWF0ZWRfYXQiLCJ2YWx1ZSI6IjIwMjEtMDEtMDhUMTU6MzY6MzcifQ==",
+            "last": "eyJpZCI6IlA5VU1DQUUiLCJvcmRlcl9ieSI6ImNyZWF0ZWRfYXQiLCJ2YWx1ZSI6IjIwMjEtMDEtMDhUMTU6MzY6MzcifQ==",
+            "limit": 20,
+            "more": False,
+            "order": "desc",
+            "order_by": "created_at",
+            "starting_after": None,
+            "time_zone": "Etc/UTC",
+        },
+    )
+
+
 async def test_get_aggregated_incident(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_get_aggregate_incident_data):
         resource = analytics.AnalyticsAPI(client)
@@ -149,3 +217,10 @@ async def test_get_aggregated_service_data_fails(client: APIClient) -> None:
         resource = analytics.AnalyticsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
             await resource.get_aggregated_service_data()
+
+
+async def test_get_multiple_raw_data(client: APIClient):
+    with mock.patch.object(client, "request", mock_get_raw_data_response):
+        resource = analytics.AnalyticsAPI(client)
+        res = await resource.get_multiple_raw_incident_data()
+        assert len(res.data) > 0
