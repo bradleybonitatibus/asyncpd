@@ -19,6 +19,8 @@ from typing import Any
 import httpx
 
 from asyncpd.models.abilities import AbilitiesAPI
+from asyncpd.models.addons import AddonsAPI
+from asyncpd.models.analytics import AnalyticsAPI
 
 
 class APIClient:
@@ -62,5 +64,15 @@ class APIClient:
 
     @property
     def abilities(self) -> AbilitiesAPI:
-        """Return an instance of the AbilitiesAPI object."""
+        """Return an instance of the AbilitiesAPI resource."""
         return AbilitiesAPI(self)
+
+    @property
+    def addons(self) -> AddonsAPI:
+        """Return an instance of the AddonsAPI resource."""
+        return AddonsAPI(self)
+
+    @property
+    def analytics(self) -> AnalyticsAPI:
+        """Return an instance of the AnalyticsAPI resource."""
+        return AnalyticsAPI(self)

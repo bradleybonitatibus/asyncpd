@@ -17,8 +17,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from asyncpd.client import APIClient
+if TYPE_CHECKING:
+    from asyncpd.client import APIClient
+
 from asyncpd.models.pagination import ClassicPaginationQuery
 from asyncpd.models.service import ServiceReference
 
