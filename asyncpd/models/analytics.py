@@ -24,6 +24,28 @@ if TYPE_CHECKING:
 
 
 @dataclass
+class AggregateAnalyticsResponse:
+    """Response wrapper from the aggregate analytics API."""
+
+    time_zone: str
+    filters: AggregateDataFilters
+    order: str
+    order_by: str
+    data: list[AggregatedMetrics] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AggregateAnalyticsResponse":
+        """Serialize AggregateAnalyticsResponse dataclass from a dict object."""
+        return AggregateAnalyticsResponse(
+            time_zone=data["time_zone"],
+            filters=AggregateDataFilters.from_dict(data["filters"]),
+            order=data["order"],
+            order_by=data["order_by"],
+            data=[AggregatedMetrics.from_dict(d) for d in data["data"]],
+        )
+
+
+@dataclass
 class AggregatedMetrics:
     """The Data payload for incident metrics."""
 
@@ -45,6 +67,13 @@ class AggregatedMetrics:
     total_incident_count: int | None = None
     total_off_hour_interruptions: int | None = None
     total_sleep_hour_interruptions: int | None = None
+    total_incidents_acknowledged: int | None = None
+    total_incidents_auto_resolved: int | None = None
+    total_incidents_manual_escalated: int | None = None
+    total_incidents_reassigned: int | None = None
+    total_incidents_timeout_escalated: int | None = None
+    total_interruptions: int | None = None
+    total_notifications: int | None = None
     total_snoozed_seconds: int | None = None
     up_time_pct: float | None = None
 
@@ -52,6 +81,36 @@ class AggregatedMetrics:
     def from_dict(cls, data: dict) -> "AggregatedMetrics":
         """Convert a dictionary into an AggregatedMetrics instance."""
         return AggregatedMetrics(**data)
+
+
+@dataclass
+class RawIncidentData:
+    """Represents the raw incident data."""
+
+    id: str
+    service_id: str
+    created_at: datetime
+    assignment_count: int
+    business_hour_interruptions: int
+    description: str
+    engaged_seconds: int
+    engaged_user_count: int
+    escalation_count: int
+    incident_number: int
+    major: bool
+    off_hour_interruptions: int
+    proirity_id: str
+    urgency: str
+    resolved_at: datetime | None = None
+    seconds_to_engage: int | None = None
+    seconds_to_first_ack: int | None = None
+    seconds_to_mobilize: int | None = None
+    seconds_to_resolve: int | None = None
+    sleep_hour_interruptions: int | None = None
+    snoozed_secondS: int | None = None
+    team_id: str | None = None
+    team_name: str | None = None
+    user_defined_effort_seconds: int | None = None
 
 
 @dataclass
@@ -71,6 +130,20 @@ class AggregateDataFilters:
         """Serialize to dict object."""
         return {k: v for k, v in self.__dict__.items() if v is not None}
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "AggregateDataFilters":
+        """Serialize AggregateDataFilters object from a dict."""
+        return AggregateDataFilters(
+            created_at_start=data["created_at_start"],
+            create_at_end=data["created_at_end"],
+            urgency=data.get("urgency"),
+            major=data.get("major"),
+            team_ids=data.get("team_ids", []),
+            service_ids=data.get("service_ids", []),
+            priority_ids=data.get("priority_ids", []),
+            priority_names=data.get("priority_names", []),
+        )
+
 
 class AnalyticsAPI:
     """API resource for interacting with PagerDuty Analytics API."""
@@ -89,7 +162,7 @@ class AnalyticsAPI:
         filters: AggregateDataFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
-    ) -> list[AggregatedMetrics]:
+    ) -> AggregateAnalyticsResponse:
         """Get the aggregated data metrics for a given domain."""
         res = await self.__client.request(
             "POST",
@@ -105,14 +178,14 @@ class AnalyticsAPI:
         if res.status_code != 200:
             res.raise_for_status()
 
-        return [AggregatedMetrics.from_dict(d) for d in res.json()["data"]]
+        return AggregateAnalyticsResponse.from_dict(res.json())
 
     async def get_aggregated_incident_data(
         self,
         filters: AggregateDataFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
-    ) -> list[AggregatedMetrics]:
+    ) -> AggregateAnalyticsResponse:
         """Get the overall incident aggregated data metrics."""
         return await self.__do_aggregate_data_fetch(
             "all", filters, time_zone, aggregate_unit
@@ -123,7 +196,7 @@ class AnalyticsAPI:
         filters: AggregateDataFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
-    ) -> list[AggregatedMetrics]:
+    ) -> AggregateAnalyticsResponse:
         """Get aggregated service data metrics."""
         return await self.__do_aggregate_data_fetch(
             "services", filters, time_zone, aggregate_unit
@@ -134,7 +207,7 @@ class AnalyticsAPI:
         filters: AggregateDataFilters | None = None,
         time_zone: str | None = None,
         aggregate_unit: Literal["day", "week", "month"] | None = None,
-    ) -> list[AggregatedMetrics]:
+    ) -> AggregateAnalyticsResponse:
         """Get team data metrics."""
         return await self.__do_aggregate_data_fetch(
             "teams", filters, time_zone, aggregate_unit
