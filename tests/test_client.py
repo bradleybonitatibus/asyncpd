@@ -18,6 +18,9 @@
 
 import os
 from asyncpd.client import APIClient
+from asyncpd.models.abilities import AbilitiesAPI
+from asyncpd.models.addons import AddonsAPI
+from asyncpd.models.analytics import AnalyticsAPI
 
 
 async def test_client_request() -> None:
@@ -34,3 +37,10 @@ async def test_client_request() -> None:
     res = await c.request("GET", "/health")
     assert res.status_code == 200
     await c.aclose()
+
+
+async def test_client_api_resource_properties():
+    client = APIClient("test")
+    assert isinstance(client.abilities, AbilitiesAPI)
+    assert isinstance(client.addons, AddonsAPI)
+    assert isinstance(client.analytics, AnalyticsAPI)

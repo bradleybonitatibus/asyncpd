@@ -12,24 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: tests
-tests:
-	tox -e py
-	open ./htmlcov/index.html
+"""Utilities module."""
 
-.PHONY: linters
-linters:
-	tox -e linters
 
-.PHONY: build
-build: clean
-	python setup.py sdist bdist_wheel
+from datetime import datetime
 
-.PHONY: install
-install:
-	pip install .
 
-.PHONY: clean
-clean:
-	rm -rf dist
-	rm -rf build
+def parse_pd_datetime_format(ds: str) -> datetime:
+    """Parse datetime objects.
+
+    PagerDuty (specifically, the Analytics API) has mixed date strings and
+    supports the following date-string format: "%Y-%m-%dT%H:%M:%S".
+    If the datestring ends with `Z`, the format string will be updated.
+
+    Args:
+        ds (str): Date string.
+
+    Returns:
+        datetime.datetime
+    """
+    fmt = "%Y-%m-%dT%H:%M:%S"
+
+    if ds.endswith("Z"):
+        fmt = f"{fmt}Z"
+
+    return datetime.strptime(ds, fmt)
