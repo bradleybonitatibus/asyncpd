@@ -14,6 +14,7 @@
 
 """Analytics API tests."""
 
+import logging
 from unittest import mock
 
 import httpx
@@ -237,55 +238,90 @@ async def mock_raw_single_incident_data(*args, **kwargs) -> httpx.Response:
     )
 
 
+async def mock_raw_responses_for_incident(*args, **kwargs) -> httpx.Response:
+    return httpx.Response(
+        status_code=200,
+        json={
+            "incident_id": "P9UMCAE",
+            "limit": 100,
+            "order": "asc",
+            "order_by": "requested_at",
+            "responses": [
+                {
+                    "requested_at": "2021-01-08T15:36:36",
+                    "responded_at": None,
+                    "responder_id": "PCY5X6I",
+                    "responder_name": "Pcholka",
+                    "responder_type": "assigned",
+                    "response_status": "pending",
+                    "time_to_respond_seconds": None,
+                },
+                {
+                    "requested_at": "2021-01-08T15:36:36",
+                    "responded_at": None,
+                    "responder_id": "PG7TXJ8",
+                    "responder_name": "Mushka",
+                    "responder_type": "assigned",
+                    "response_status": "pending",
+                    "time_to_respond_seconds": None,
+                },
+            ],
+            "time_zone": "Etc/UTC",
+        },
+    )
+
+
 async def test_get_aggregated_incident(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_get_aggregate_incident_data):
-        resource = analytics.AnalyticsAPI(client)
-        res = await resource.get_aggregated_incident_data()
+        res = await client.analytics.get_aggregated_incident_data()
         assert len(res.data) > 0
 
 
 async def test_get_aggreated_incident_fails(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_invalid_auth):
-        resource = analytics.AnalyticsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            await resource.get_aggregated_incident_data()
+            await client.analytics.get_aggregated_incident_data()
 
 
 async def test_get_aggregated_service_data(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_get_aggregate_incident_data):
-        resource = analytics.AnalyticsAPI(client)
-        res = await resource.get_aggregated_service_data()
+        res = await client.analytics.get_aggregated_service_data()
         assert len(res.data) > 0
 
 
 async def test_get_aggregated_service_data_fails(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_invalid_auth):
-        resource = analytics.AnalyticsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            await resource.get_aggregated_service_data()
+            await client.analytics.get_aggregated_service_data()
 
 
 async def test_get_multiple_raw_data(client: APIClient):
     with mock.patch.object(client, "request", mock_get_raw_data_response):
-        resource = analytics.AnalyticsAPI(client)
-        res = await resource.get_multiple_raw_incident_data()
+        res = await client.analytics.get_multiple_raw_incident_data()
         assert len(res.data) > 0
 
 
 async def test_get_single_raw_data(client: APIClient):
     with mock.patch.object(client, "request", mock_raw_single_incident_data):
-        resource = analytics.AnalyticsAPI(client)
-        assert await resource.get_single_raw_incident_data("test") is not None
+        assert await client.analytics.get_single_raw_incident_data("test") is not None
 
 
 async def test_get_single_raw_data_returns_none(client: APIClient):
     with mock.patch.object(client, "request", mock_not_found):
-        resource = analytics.AnalyticsAPI(client)
-        assert await resource.get_single_raw_incident_data("test") is None
+        assert await client.analytics.get_single_raw_incident_data("test") is None
 
 
 async def test_get_signle_raw_data_raises(client: APIClient):
     with mock.patch.object(client, "request", mock_invalid_auth):
-        resource = analytics.AnalyticsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            await resource.get_single_raw_incident_data("test")
+            await client.analytics.get_single_raw_incident_data("test")
+
+
+async def test_get_raw_responses_for_incident(client: APIClient):
+    with mock.patch.object(client, "request", mock_raw_responses_for_incident):
+        assert await client.analytics.get_raw_responses_for_incident("test") is not None
+
+
+async def test_get_raw_responses_for_incident_returns_none(client: APIClient):
+    with mock.patch.object(client, "request", mock_not_found):
+        assert await client.analytics.get_raw_responses_for_incident("test") is None

@@ -57,32 +57,27 @@ async def test_list_abilities(client: APIClient) -> None:
         "request",
         mock_list_abilities,
     ):
-        a = abilities.AbilitiesAPI(client)
-        all_abilities = await a.list()
+        all_abilities = await client.abilities.list()
         assert len(all_abilities) > 0
 
 
 async def test_list_abilities_no_auth(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_invalid_auth):
-        a = abilities.AbilitiesAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            assert await a.list()
+            assert await client.abilities.list()
 
 
 async def test_abilities_is_enabled_true(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_enabled_true):
-        a = abilities.AbilitiesAPI(client)
-        assert await a.is_enabled("teams") is True
+        assert await client.abilities.is_enabled("teams") is True
 
 
 async def test_abilities_is_enabled_no_auth(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_invalid_auth):
         with pytest.raises(httpx.HTTPStatusError):
-            a = abilities.AbilitiesAPI(client)
-            assert await a.is_enabled("teams") is True
+            assert await client.abilities.is_enabled("teams") is True
 
 
 async def test_abilities_is_enabled_false(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_enabled_false):
-        a = abilities.AbilitiesAPI(client)
-        assert await a.is_enabled("sso") is False
+        assert await client.abilities.is_enabled("sso") is False

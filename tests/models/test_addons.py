@@ -98,22 +98,19 @@ async def mock_delete_addon(*args, **kwargs) -> httpx.Response:
 
 async def test_list_addons(client: APIClient):
     with mock.patch.object(client, "request", mock_list_addons):
-        resource = addons.AddonsAPI(client)
-        ad = await resource.list()
+        ad = await client.addons.list()
         assert ad.more is False
 
 
 async def test_list_addon_invalid_auth(client: APIClient):
     with mock.patch.object(client, "request", mock_invalid_auth):
-        resource = addons.AddonsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            await resource.list()
+            await client.addons.list()
 
 
 async def test_install_addon(client: APIClient):
     with mock.patch.object(client, "request", mock_install_addon):
-        resource = addons.AddonsAPI(client)
-        ad = await resource.install_addon(
+        ad = await client.addons.install_addon(
             addons.NewAddon(
                 type=addons.AddonType.FULL_PAGE_ADDON,
                 name="test",
@@ -126,17 +123,15 @@ async def test_install_addon(client: APIClient):
 
 async def test_install_invalid_auth(client: APIClient):
     with mock.patch.object(client, "request", mock_invalid_auth):
-        resource = addons.AddonsAPI(client)
         with pytest.raises(httpx.HTTPStatusError):
-            await resource.install_addon(
+            await client.addons.install_addon(
                 addons.NewAddon(addons.AddonType.FULL_PAGE_ADDON, "test", "test")
             )
 
 
 async def test_get_addon(client: APIClient):
     with mock.patch.object(client, "request", mock_get_addon):
-        resource = addons.AddonsAPI(client)
-        ad = await resource.get("test")
+        ad = await client.addons.get("test")
         assert ad is not None
         assert ad.id is not None
         assert ad.services is not None
@@ -144,8 +139,7 @@ async def test_get_addon(client: APIClient):
 
 async def test_get_addon_not_found(client: APIClient):
     with mock.patch.object(client, "request", mock_not_found):
-        resource = addons.AddonsAPI(client)
-        ad = await resource.get("test")
+        ad = await client.addons.get("test")
         assert ad is None
 
 
@@ -157,8 +151,7 @@ async def test_delete_addon(client: APIClient):
 
 async def test_update_addon(client: APIClient):
     with mock.patch.object(client, "request", mock_get_addon):
-        resource = addons.AddonsAPI(client)
-        addon = await resource.update(
+        addon = await client.addons.update(
             id="test",
             update_mask=addons.AddonUpdateMask(
                 name="test 2",

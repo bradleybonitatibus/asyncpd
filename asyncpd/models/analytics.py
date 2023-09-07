@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, TYPE_CHECKING
 
+from asyncpd import utils
+
 if TYPE_CHECKING:
     from asyncpd.client import APIClient
 
@@ -112,6 +114,8 @@ class AggregatedMetrics:
     @classmethod
     def from_dict(cls, data: dict) -> "AggregatedMetrics":
         """Convert a dictionary into an AggregatedMetrics instance."""
+        if data["range_start"] is not None:
+            data["range_start"] = datetime.fromisoformat(data["range_start"])
         return AggregatedMetrics(**data)
 
 
@@ -162,6 +166,12 @@ class RawIncidentData:
     @classmethod
     def from_dict(cls, data: dict) -> "RawIncidentData":
         """Serialize RawIncidentData from a dictionary."""
+        if data["resolved_at"] is not None:
+            data["resolved_at"] = utils.parse_pd_datetime_format(data["resolved_at"])
+
+        if data["created_at"] is not None:
+            data["created_at"] = utils.parse_pd_datetime_format(data["created_at"])
+
         return RawIncidentData(**data)
 
 
@@ -186,14 +196,66 @@ class AnalyticsRequestFilters:
     def from_dict(cls, data: dict) -> "AnalyticsRequestFilters":
         """Serialize AnalyticsRequestFilters object from a dict."""
         return AnalyticsRequestFilters(
-            created_at_start=data["created_at_start"],
-            create_at_end=data["created_at_end"],
+            created_at_start=utils.parse_pd_datetime_format(data["created_at_start"]),
+            create_at_end=utils.parse_pd_datetime_format(data["created_at_end"]),
             urgency=data.get("urgency"),
             major=data.get("major"),
             team_ids=data.get("team_ids", []),
             service_ids=data.get("service_ids", []),
             priority_ids=data.get("priority_ids", []),
             priority_names=data.get("priority_names", []),
+        )
+
+
+@dataclass
+class RawIncidentResponsesData:
+    """Data model for raw Response Data."""
+
+    requested_at: datetime
+    responder_id: str
+    responder_name: str
+    responder_type: str
+    response_status: str
+    time_to_respond_seconds: int | None = None
+    responded_at: datetime | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RawIncidentResponsesData":
+        """Serialize RawIncidentResponsesData from a dict object."""
+        return RawIncidentResponsesData(
+            requested_at=utils.parse_pd_datetime_format(data["requested_at"]),
+            responder_id=data["responder_id"],
+            responder_name=data["responder_name"],
+            responder_type=data["responder_type"],
+            response_status=data["response_status"],
+            time_to_respond_seconds=data["time_to_respond_seconds"],
+            responded_at=None
+            if data["responded_at"] is None
+            else utils.parse_pd_datetime_format(data["responded_at"]),
+        )
+
+
+@dataclass
+class RawResponsesForSingleIncident:
+    """API Response wrapper for getting raw incident responses."""
+
+    incident_id: str
+    limit: int
+    order: str
+    order_by: str
+    responses: list[RawIncidentResponsesData] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RawResponsesForSingleIncident":
+        """Serialize RawResponsesForSingleIncident from a dict object."""
+        return RawResponsesForSingleIncident(
+            incident_id=data["incident_id"],
+            limit=data["limit"],
+            order=data["order"],
+            order_by=data["order_by"],
+            responses=[
+                RawIncidentResponsesData.from_dict(r) for r in data["responses"]
+            ],
         )
 
 
@@ -323,3 +385,33 @@ class AnalyticsAPI:
             res.raise_for_status()
 
         return RawIncidentData.from_dict(res.json())
+
+    async def get_raw_responses_for_incident(
+        self,
+        incident_id: str,
+        limit: int | None = None,
+        order: str = "desc",
+        time_zone: str | None = None,
+    ) -> RawResponsesForSingleIncident | None:
+        """Get the raw responses for a single incident."""
+        res = await self.__client.request(
+            "GET",
+            f"/analytics/raw/incidents/{incident_id}/responses",
+            headers={
+                "X-EARLY-ACCESS": "analytics-v2",
+            },
+            data={
+                "limit": limit,
+                "order": order,
+                "order_by": "requested_at",
+                "time_zone": time_zone,
+            },
+        )
+
+        if res.status_code == 404:
+            return None
+
+        if res.status_code != 200:
+            res.raise_for_status()
+
+        return RawResponsesForSingleIncident.from_dict(res.json())
