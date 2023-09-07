@@ -37,7 +37,7 @@ The following list displays what API resources are available in this package.
 
 - [x] Abilities
 - [x] Addons
-- [ ] Analytics
+- [x] Analytics
 - [ ] Audit
 - [ ] Automation Actions
 - [ ] Paused Incident Reports
