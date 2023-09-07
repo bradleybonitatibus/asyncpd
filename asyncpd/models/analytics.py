@@ -46,7 +46,7 @@ class AggregateAnalyticsResponse:
 
 
 @dataclass
-class RawAnalyticsResponse:
+class RawAnalyticsMultipleIncidentsResponse:
     """Response wrapper for raw analytics incident data."""
 
     first: str
@@ -61,9 +61,9 @@ class RawAnalyticsResponse:
     data: list[RawIncidentData] = field(default_factory=list)
 
     @classmethod
-    def from_dict(self, data: dict) -> "RawAnalyticsResponse":
-        """Serialize RawAnalyticsResponse from a dict."""
-        return RawAnalyticsResponse(
+    def from_dict(self, data: dict) -> "RawAnalyticsMultipleIncidentsResponse":
+        """Serialize RawAnalyticsMultipleIncidentsResponse from a dict."""
+        return RawAnalyticsMultipleIncidentsResponse(
             first=data["first"],
             last=data["last"],
             limit=data["limit"],
@@ -272,7 +272,7 @@ class AnalyticsAPI:
         order: str | None = None,
         order_by: str | None = None,
         time_zone: str | None = None,
-    ) -> RawAnalyticsResponse:
+    ) -> RawAnalyticsMultipleIncidentsResponse:
         """Fetch multiple raw incident data points."""
         res = await self.__client.request(
             "POST",
@@ -292,4 +292,34 @@ class AnalyticsAPI:
         if res.status_code != 200:
             res.raise_for_status()
 
-        return RawAnalyticsResponse.from_dict(res.json())
+        return RawAnalyticsMultipleIncidentsResponse.from_dict(res.json())
+
+    async def get_single_raw_incident_data(
+        self, incident_id: str
+    ) -> RawIncidentData | None:
+        """Get analytics for a single incident.
+
+        Args:
+            incident_id (str): Incident ID (e.x. 'P9UMCAE')
+
+        Raises:
+            httpx.HTTPStatusError
+                when HTTP status is not a 404 or 200
+
+        Returns:
+            RawIncidentData | None
+                None when the incident_id is not found.
+        """
+        res = await self.__client.request(
+            "GET",
+            f"/analytics/raw/incidents/{incident_id}",
+            {"X-EARLY-ACCESS": "analytics-v2"},
+        )
+
+        if res.status_code == 404:
+            return None
+
+        if res.status_code != 200:
+            res.raise_for_status()
+
+        return RawIncidentData.from_dict(res.json())

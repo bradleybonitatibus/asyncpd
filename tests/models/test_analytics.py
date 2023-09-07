@@ -191,6 +191,52 @@ async def mock_get_raw_data_response(*args, **kwargs) -> httpx.Response:
     )
 
 
+async def mock_raw_single_incident_data(*args, **kwargs) -> httpx.Response:
+    return httpx.Response(
+        status_code=200,
+        json={
+            "team_id": "PGVXG6U",
+            "seconds_to_first_ack": None,
+            "escalation_policy_name": "Korabl-Sputnik 3",
+            "status": "resolved",
+            "sleep_hour_interruptions": 2,
+            "manual_escalation_count": 0,
+            "urgency": "high",
+            "priority_name": "P1",
+            "service_id": "PQVUB8D",
+            "total_notifications": 2,
+            "id": "P9UMCAE",
+            "created_at": "2021-01-08T15:36:37",
+            "resolved_by_user_id": "PRJ4208",
+            "reassignment_count": 0,
+            "engaged_user_count": 0,
+            "incident_number": 2,
+            "assignment_count": 2,
+            "resolved_by_user_name": "Brett Willemsen",
+            "priority_id": "PITMC5Y",
+            "escalation_policy_id": "PCI3U5T",
+            "resolved_at": "2021-01-08T15:39:52",
+            "business_hour_interruptions": 0,
+            "seconds_to_mobilize": None,
+            "priority_order": 67108864,
+            "seconds_to_engage": None,
+            "escalation_count": 0,
+            "major": None,
+            "description": "Deorbit, engines not cut off as planned",
+            "user_defined_effort_seconds": None,
+            "auto_resolved": False,
+            "team_name": "Space Cosmonauts",
+            "service_name": "Korabl-Sputnik 3",
+            "timeout_escalation_count": 0,
+            "seconds_to_resolve": 195,
+            "total_interruptions": None,
+            "off_hour_interruptions": 0,
+            "engaged_seconds": 0,
+            "snoozed_seconds": 0,
+        },
+    )
+
+
 async def test_get_aggregated_incident(client: APIClient) -> None:
     with mock.patch.object(client, "request", mock_get_aggregate_incident_data):
         resource = analytics.AnalyticsAPI(client)
@@ -224,3 +270,22 @@ async def test_get_multiple_raw_data(client: APIClient):
         resource = analytics.AnalyticsAPI(client)
         res = await resource.get_multiple_raw_incident_data()
         assert len(res.data) > 0
+
+
+async def test_get_single_raw_data(client: APIClient):
+    with mock.patch.object(client, "request", mock_raw_single_incident_data):
+        resource = analytics.AnalyticsAPI(client)
+        assert await resource.get_single_raw_incident_data("test") is not None
+
+
+async def test_get_single_raw_data_returns_none(client: APIClient):
+    with mock.patch.object(client, "request", mock_not_found):
+        resource = analytics.AnalyticsAPI(client)
+        assert await resource.get_single_raw_incident_data("test") is None
+
+
+async def test_get_signle_raw_data_raises(client: APIClient):
+    with mock.patch.object(client, "request", mock_invalid_auth):
+        resource = analytics.AnalyticsAPI(client)
+        with pytest.raises(httpx.HTTPStatusError):
+            await resource.get_single_raw_incident_data("test")
